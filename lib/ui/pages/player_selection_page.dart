@@ -1,5 +1,9 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:skull_king/theme/app_theme.dart';
+import 'package:skull_king/ui/pages/home_page.dart';
+import 'package:skull_king/ui/pages/score_page.dart';
 import 'package:skull_king/ui/widgets/player_avatar.dart';
 
 class PlayerSelectionPage extends StatefulWidget {
@@ -34,6 +38,50 @@ class _PlayerSelectionPageState extends State<PlayerSelectionPage>
   void dispose() {
     _fadeController.dispose();
     super.dispose();
+  }
+
+  void _confirmReturnToMenu(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.black.withOpacity(0.85),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          "Retour au menu principal ?",
+          style: TextStyle(color: AppTheme.primaryGold),
+        ),
+        content: const Text(
+          "La partie en cours sera perdue.",
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "Annuler",
+              style: TextStyle(color: Colors.white70),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGold,
+            ),
+            onPressed: () {
+              Navigator.pop(context); // Ferme le dialogue
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const HomePage()),
+                (route) => false,
+              );
+            },
+            child: const Text(
+              "Confirmer",
+              style: TextStyle(color: Colors.black),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _addPlayer() async {
@@ -113,7 +161,20 @@ class _PlayerSelectionPageState extends State<PlayerSelectionPage>
 
           // Légère teinte pour le contraste
           Container(color: Colors.black.withOpacity(0.2)),
-
+          // Bouton menu haut droit
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: IconButton(
+                  onPressed: () => _confirmReturnToMenu(context),
+                  icon: const Icon(Icons.menu, color: Colors.black, size: 34),
+                  tooltip: "Retour au menu principal",
+                ),
+              ),
+            ),
+          ),
           // Contenu centré
           FadeTransition(
             opacity: _fadeAnimation,
@@ -139,20 +200,46 @@ class _PlayerSelectionPageState extends State<PlayerSelectionPage>
 
           // Bouton Play en bas à droite
           Positioned(
-            bottom: 20,
-            right: 20,
+            bottom: 25,
+            right: 25,
             child: FadeTransition(
               opacity: _fadeAnimation,
-              child: IconButton(
+              child: ElevatedButton.icon(
                 onPressed: _players.isNotEmpty
                     ? () {
-                        // TODO: Lancer la partie
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ScorePage(players: _players),
+                          ),
+                        );
                       }
                     : null,
-                icon: const Icon(Icons.play_circle_fill, size: 70),
-                color: _players.isNotEmpty
-                    ? AppTheme.primaryGold
-                    : Colors.white24,
+                icon: const Icon(
+                  Icons.play_arrow,
+                  color: AppTheme.textWhite,
+                  size: 30,
+                ),
+                label: const Text(
+                  "Début",
+                  style: TextStyle(
+                    color: AppTheme.textWhite,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 18,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(40),
+                  ),
+                  elevation: 8,
+                  shadowColor: AppTheme.primaryGold.withOpacity(0.3),
+                ),
               ),
             ),
           ),
