@@ -3,12 +3,20 @@
 import 'package:flutter/material.dart';
 import 'package:skull_king/theme/app_theme.dart';
 import 'package:skull_king/ui/pages/home_page.dart';
+import 'package:skull_king/ui/pages/round_page.dart';
 import 'package:skull_king/ui/widgets/score_table.dart';
 
-class ScorePage extends StatelessWidget {
+class ScorePage extends StatefulWidget {
   final List<String> players;
 
   const ScorePage({super.key, required this.players});
+
+  @override
+  State<ScorePage> createState() => _ScorePageState();
+}
+
+class _ScorePageState extends State<ScorePage> {
+  int currentRound = 1;
 
   void _confirmReturnToMenu(BuildContext context) {
     showDialog(
@@ -56,17 +64,16 @@ class ScorePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Padding global pour ne pas coller aux bords de l'écran
     return Scaffold(
       body: Stack(
         children: [
+          /// --- Image de fond ---
           Positioned.fill(
             child: Image.asset('assets/images/papier.jpg', fit: BoxFit.cover),
           ),
-          // légère teinte pour lisibilité
           Container(color: Colors.black.withOpacity(0.08)),
 
-          // Bouton menu haut droit
+          /// --- Bouton menu haut gauche ---
           SafeArea(
             child: Align(
               alignment: Alignment.topLeft,
@@ -79,24 +86,71 @@ class ScorePage extends StatelessWidget {
               ),
             ),
           ),
-          // Zone principale : tableau qui prend l'espace disponible
+
+          /// --- Contenu principal ---
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16.0,
                 vertical: 80.0,
               ),
-              child: Column(
+              child: Stack(
                 children: [
-                  // Optionnel : titre ou espace (tu as demandé d'enlever les titres sur d'autres pages)
-                  Expanded(
-                    child: Container(
-                      // Fond transparent explicitement pour s'assurer qu'on voit le papier
-                      color: Colors.transparent,
-                      child: ScoreTable(players: players),
+                  /// --- Tableau des scores ---
+                  Positioned.fill(
+                    child: ScoreTable(
+                      players: widget.players,
+                      currentRound: currentRound,
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+
+          /// --- Bouton menu haut gauche ---
+          SafeArea(
+            child: Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.play_arrow, color: Colors.white),
+                  label: Text(
+                    'Manche $currentRound',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RoundPage(
+                          roundNumber: currentRound,
+                          players: widget.players,
+                        ),
+                      ),
+                    );
+
+                    // Si la manche est terminée, passer à la suivante
+                    if (result == true && currentRound < 10) {
+                      setState(() {
+                        currentRound++;
+                      });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 18,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(40),
+                    ),
+                    elevation: 8,
+                    shadowColor: AppTheme.primaryGold.withOpacity(0.3),
+                  ),
+                ),
               ),
             ),
           ),
