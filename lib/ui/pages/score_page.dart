@@ -17,6 +17,7 @@ class ScorePage extends StatefulWidget {
 
 class _ScorePageState extends State<ScorePage> {
   int currentRound = 1;
+  final Map<int, Map<String, Map<String, dynamic>>> allScores = {};
 
   void _confirmReturnToMenu(BuildContext context) {
     showDialog(
@@ -101,6 +102,7 @@ class _ScorePageState extends State<ScorePage> {
                     child: ScoreTable(
                       players: widget.players,
                       currentRound: currentRound,
+                      allScores: allScores, // ✅ on passe les scores ici
                     ),
                   ),
                 ],
@@ -131,9 +133,11 @@ class _ScorePageState extends State<ScorePage> {
                       ),
                     );
 
-                    // Si la manche est terminée, passer à la suivante
-                    if (result == true && currentRound < 10) {
+                    if (result != null &&
+                        result is Map<String, Map<String, dynamic>>) {
+                      // ✅ on enregistre les scores
                       setState(() {
+                        allScores[currentRound] = result;
                         currentRound++;
                       });
                     }

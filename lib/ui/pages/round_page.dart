@@ -26,25 +26,65 @@ class _RoundPageState extends State<RoundPage> {
   @override
   void initState() {
     super.initState();
-    bets = {for (var player in widget.players) player: null};
-    tricks = {for (var player in widget.players) player: null};
-    bonuses = {for (var player in widget.players) player: null};
+    bets = {for (var p in widget.players) p: null};
+    tricks = {for (var p in widget.players) p: null};
+    bonuses = {for (var p in widget.players) p: null};
   }
 
   bool get allBetsSelected => bets.values.every((v) => v != null);
   bool get allTricksSelected => tricks.values.every((v) => v != null);
 
-  void _goToNextStep() {
+  void _nextStep() {
     if (currentStep < 1) setState(() => currentStep++);
   }
 
   void _finishRound() {
-    Navigator.pop(context, true);
+    final Map<String, Map<String, dynamic>> roundResults = {};
+
+    for (var player in widget.players) {
+      final int bet = bets[player] ?? 0;
+      final int trick = tricks[player] ?? 0;
+      final int bonus = int.tryParse(bonuses[player] ?? '0') ?? 0;
+
+      final int points = calculatePoints(
+        roundNumber: widget.roundNumber,
+        bet: bet,
+        tricks: trick,
+      );
+
+      final int total = bonus > 0 ? points + bonus : points;
+
+      roundResults[player] = {
+        'mise': bet,
+        'plis': trick,
+        'points': points,
+        'bonus': bonus > 0 ? bonus : null,
+        'total': total,
+      };
+    }
+
+    Navigator.pop(context, roundResults);
+  }
+
+  int calculatePoints({
+    required int roundNumber,
+    required int bet,
+    required int tricks,
+  }) {
+    if (bet > 0 && bet == tricks) {
+      return 20 * bet;
+    } else if (bet > 0 && bet != tricks) {
+      return -10 * (bet - tricks).abs();
+    } else if (bet == 0 && bet == tricks) {
+      return 10 * roundNumber;
+    } else {
+      return -10 * roundNumber;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final roundNumber = widget.roundNumber;
+    final round = widget.roundNumber;
 
     return Scaffold(
       body: Stack(
@@ -58,10 +98,9 @@ class _RoundPageState extends State<RoundPage> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    'Manche $roundNumber',
+                    "Manche $round",
                     style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -83,16 +122,15 @@ class _RoundPageState extends State<RoundPage> {
                         type: StepperType.vertical,
                         currentStep: currentStep,
                         margin: EdgeInsets.zero,
-                        controlsBuilder: (context, details) =>
-                            const SizedBox.shrink(),
+                        controlsBuilder: (_, _) => const SizedBox.shrink(),
                         onStepContinue: () {
                           if (currentStep == 0 && allBetsSelected) {
-                            _goToNextStep();
+                            _nextStep();
                           }
                         },
-                        onStepTapped: (index) {
-                          if (index <= currentStep) {
-                            setState(() => currentStep = index);
+                        onStepTapped: (i) {
+                          if (i <= currentStep) {
+                            setState(() => currentStep = i);
                           }
                         },
                         steps: [
@@ -109,13 +147,8 @@ class _RoundPageState extends State<RoundPage> {
                                 ? StepState.complete
                                 : StepState.indexed,
                             content: Padding(
-                              // 🔥 réduit la marge verticale pour alignement
-                              padding: const EdgeInsets.only(
-                                top: 8,
-                                bottom: 12,
-                                left: 0,
-                              ),
-                              child: _buildBetStep(roundNumber),
+                              padding: const EdgeInsets.only(top: 8),
+                              child: _buildBetStep(round),
                             ),
                           ),
                           Step(
@@ -132,7 +165,7 @@ class _RoundPageState extends State<RoundPage> {
                                 : StepState.indexed,
                             content: Padding(
                               padding: const EdgeInsets.only(top: 8),
-                              child: _buildTrickStep(roundNumber),
+                              child: _buildTrickGrid(round),
                             ),
                           ),
                         ],
@@ -156,11 +189,11 @@ class _RoundPageState extends State<RoundPage> {
                       ),
                       onPressed: _finishRound,
                       child: const Text(
-                        'Résultat',
+                        "Résultat",
                         style: TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
                           fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
@@ -173,16 +206,92 @@ class _RoundPageState extends State<RoundPage> {
     );
   }
 
+  /// --- Étape 1 : Mises ---
   Widget _buildBetStep(int roundNumber) {
     final miseOptions = List<int>.generate(roundNumber + 1, (i) => i);
 
-    return Column(
-      children: [
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 24,
-          runSpacing: 16,
-          children: widget.players.map((player) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        alignment: WrapAlignment.start,
+        spacing: 24,
+        runSpacing: 10,
+        children: widget.players.map((player) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: Colors.black,
+                child: Text(
+                  player.substring(0, 1).toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButton<int>(
+                  value: bets[player],
+                  hint: const Text(
+                    "Mise",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  dropdownColor: Colors.black,
+                  underline: const SizedBox(),
+                  iconEnabledColor: Colors.white,
+                  items: miseOptions
+                      .map(
+                        (v) => DropdownMenuItem(
+                          value: v,
+                          child: Text(
+                            v.toString(),
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      bets[player] = value;
+                      if (allBetsSelected) _nextStep();
+                    });
+                  },
+                ),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildTrickGrid(int roundNumber) {
+    final plisOptions = List<int>.generate(roundNumber + 1, (i) => i);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int crossAxisCount = constraints.maxWidth > 600 ? 3 : 2; // adaptatif
+        return GridView.builder(
+          physics: const NeverScrollableScrollPhysics(), // 🔥 pas de scroll
+          shrinkWrap: true,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 20,
+            crossAxisSpacing: 20,
+            childAspectRatio: 1.25,
+          ),
+          itemCount: widget.players.length,
+          itemBuilder: (context, index) {
+            final player = widget.players[index];
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -199,143 +308,83 @@ class _RoundPageState extends State<RoundPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: DropdownButton<int>(
-                    value: bets[player],
-                    hint: const Text(
-                      "Mise",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    dropdownColor: Colors.black,
-                    underline: const SizedBox(),
-                    iconEnabledColor: Colors.white,
-                    items: miseOptions
-                        .map(
-                          (v) => DropdownMenuItem(
-                            value: v,
-                            child: Text(
-                              v.toString(),
-                              style: const TextStyle(color: Colors.white),
-                            ),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        bets[player] = value;
-                        if (allBetsSelected) _goToNextStep();
-                      });
-                    },
+                          child: DropdownButton<int>(
+                            value: tricks[player],
+                            hint: const Text(
+                              "Plis",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            dropdownColor: Colors.black,
+                            underline: const SizedBox(),
+                            iconEnabledColor: Colors.white,
+                            items: plisOptions
+                                .map(
+                                  (v) => DropdownMenuItem(
+                                    value: v,
+                                    child: Text(
+                                      v.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (val) {
+                              setState(() {
+                                tricks[player] = val;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 65,
+                          child: TextField(
+                            onChanged: (val) =>
+                                bonuses[player] = val.isEmpty ? null : val,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.black,
+                              hintText: "Bonus",
+                              hintStyle: const TextStyle(color: Colors.white70),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(
+                                  color: Colors.black,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 6,
+                              ),
+                            ),
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTrickStep(int roundNumber) {
-    final plisOptions = List<int>.generate(roundNumber + 1, (i) => i);
-
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 24,
-            runSpacing: 16,
-            children: widget.players.map((player) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.black,
-                    child: Text(
-                      player.substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: DropdownButton<int>(
-                          value: tricks[player],
-                          hint: const Text(
-                            "Plis",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          dropdownColor: Colors.black,
-                          underline: const SizedBox(),
-                          iconEnabledColor: Colors.white,
-                          items: plisOptions
-                              .map(
-                                (v) => DropdownMenuItem(
-                                  value: v,
-                                  child: Text(
-                                    v.toString(),
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              tricks[player] = value;
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 70,
-                        child: TextField(
-                          onChanged: (value) =>
-                              bonuses[player] = value.isEmpty ? null : value,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.black,
-                            hintText: "Bonus",
-                            hintStyle: const TextStyle(color: Colors.white70),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Colors.black),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                          ),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+          },
+        );
+      },
     );
   }
 }

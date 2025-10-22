@@ -6,11 +6,13 @@ import 'package:skull_king/ui/widgets/score_cell.dart';
 class ScoreTable extends StatelessWidget {
   final List<String> players;
   final int currentRound;
+  final Map<int, Map<String, Map<String, dynamic>>> allScores;
 
   const ScoreTable({
     super.key,
     required this.players,
     required this.currentRound,
+    required this.allScores,
   });
 
   @override
@@ -112,6 +114,7 @@ class ScoreTable extends StatelessWidget {
     return List.generate(10, (index) {
       final roundNumber = index + 1;
       final bool isCurrentRound = roundNumber == currentRound;
+      final roundData = allScores[roundNumber];
 
       return TableRow(
         decoration: BoxDecoration(
@@ -129,9 +132,31 @@ class ScoreTable extends StatelessWidget {
               ),
             ),
           ),
-          ...players.map((_) => const ScoreCell()),
+          ...players.map((player) {
+            final data = roundData?[player];
+            return ScoreCell(
+              mise: data?['mise'],
+              plis: data?['plis'],
+              points: data?['points'],
+              bonus: data?['bonus'],
+              total: data?['total'],
+              cumul: _calculateCumulativeScore(player, roundNumber),
+              isPastRound:
+                  roundNumber <
+                  currentRound, // ✅ cumul seulement manches passées
+            );
+          }),
         ],
       );
     });
+  }
+
+  int _calculateCumulativeScore(String player, int roundNumber) {
+    int cumul = 0;
+    for (int i = 1; i <= roundNumber; i++) {
+      final total = allScores[i]?[player]?['total'];
+      if (total != null) cumul += total as int;
+    }
+    return cumul;
   }
 }
