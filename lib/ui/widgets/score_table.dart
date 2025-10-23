@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -30,8 +30,9 @@ class _ScoreTableState extends State<ScoreTable>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+      duration: const Duration(milliseconds: 1200),
+    );
+
     _glowAnimation = Tween<double>(
       begin: 0.5,
       end: 1.0,
@@ -44,14 +45,20 @@ class _ScoreTableState extends State<ScoreTable>
     super.dispose();
   }
 
-  /// --- Calcule les leaders (peut en avoir plusieurs en cas d’égalité)
+  int _calculateCumulativeScore(String player, int roundNumber) {
+    int cumul = 0;
+    for (int i = 1; i <= roundNumber; i++) {
+      final total = widget.allScores[i]?[player]?['total'];
+      if (total != null) cumul += total as int;
+    }
+    return cumul;
+  }
+
   List<String> _getLeaders() {
     Map<String, int> totals = {
-      for (var p in widget.players)
-        p: _calculateCumulativeScore(p, widget.currentRound),
+      for (var p in widget.players) p: _calculateCumulativeScore(p, 10),
     };
     if (totals.values.every((v) => v == 0)) return [];
-
     final maxScore = totals.values.reduce((a, b) => a > b ? a : b);
     return totals.entries
         .where((e) => e.value == maxScore)
@@ -69,7 +76,7 @@ class _ScoreTableState extends State<ScoreTable>
         const double fixedPlayerColWidth = 90;
         final bool enableHorizontalScroll = widget.players.length > 3;
 
-        final Map<int, TableColumnWidth> columnWidths = _buildColumnWidths(
+        final columnWidths = _buildColumnWidths(
           constraints.maxWidth,
           firstColWidth,
           fixedPlayerColWidth,
@@ -123,13 +130,11 @@ class _ScoreTableState extends State<ScoreTable>
 
   TableRow _buildHeaderRow(List<String> leaders) {
     return TableRow(
-      decoration: const BoxDecoration(color: Colors.transparent),
       children: [
         const SizedBox(),
         ...widget.players.map(
           (p) => AnimatedContainer(
             duration: const Duration(milliseconds: 400),
-            curve: Curves.easeInOut,
             color: leaders.contains(p)
                 ? Colors.amber.withOpacity(0.25)
                 : Colors.transparent,
@@ -156,13 +161,10 @@ class _ScoreTableState extends State<ScoreTable>
                         animation: _glowAnimation,
                         builder: (context, child) => Transform.scale(
                           scale: 1 + 0.1 * _glowAnimation.value,
-                          child: Opacity(
-                            opacity: 0.6 + 0.4 * _glowAnimation.value,
-                            child: SvgPicture.asset(
-                              'assets/svg/crown.svg',
-                              width: 18,
-                              height: 18,
-                            ),
+                          child: SvgPicture.asset(
+                            'assets/svg/crown.svg',
+                            width: 18,
+                            height: 18,
                           ),
                         ),
                       ),
@@ -207,7 +209,6 @@ class _ScoreTableState extends State<ScoreTable>
 
             return AnimatedContainer(
               duration: const Duration(milliseconds: 400),
-              curve: Curves.easeInOut,
               color: isLeader && roundNumber < widget.currentRound
                   ? Colors.amber.withOpacity(0.15)
                   : Colors.transparent,
@@ -225,14 +226,5 @@ class _ScoreTableState extends State<ScoreTable>
         ],
       );
     });
-  }
-
-  int _calculateCumulativeScore(String player, int roundNumber) {
-    int cumul = 0;
-    for (int i = 1; i <= roundNumber; i++) {
-      final total = widget.allScores[i]?[player]?['total'];
-      if (total != null) cumul += total as int;
-    }
-    return cumul;
   }
 }

@@ -111,53 +111,54 @@ class _ScorePageState extends State<ScorePage> {
           ),
 
           /// --- Bouton menu haut gauche ---
-          SafeArea(
-            child: Align(
-              alignment: Alignment.bottomRight,
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.play_arrow, color: Colors.white),
-                  label: Text(
-                    'Manche $currentRound',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => RoundPage(
-                          roundNumber: currentRound,
-                          players: widget.players,
+          /// --- Bouton "Manche suivante" ---
+          if (currentRound <= 10)
+            SafeArea(
+              child: Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.play_arrow, color: Colors.white),
+                    label: Text(
+                      'Manche $currentRound',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RoundPage(
+                            roundNumber: currentRound,
+                            players: widget.players,
+                          ),
                         ),
-                      ),
-                    );
+                      );
 
-                    if (result != null &&
-                        result is Map<String, Map<String, dynamic>>) {
-                      // ✅ on enregistre les scores
-                      setState(() {
-                        allScores[currentRound] = result;
-                        currentRound++;
-                      });
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 28,
-                      vertical: 18,
+                      if (result != null &&
+                          result is Map<String, Map<String, dynamic>>) {
+                        setState(() {
+                          allScores[currentRound] = result;
+                          currentRound++;
+                        });
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 18,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(40),
+                      ),
+                      elevation: 8,
+                      shadowColor: AppTheme.primaryGold.withOpacity(0.3),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(40),
-                    ),
-                    elevation: 8,
-                    shadowColor: AppTheme.primaryGold.withOpacity(0.3),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
