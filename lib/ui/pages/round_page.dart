@@ -1,17 +1,19 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
-import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:confetti/confetti.dart';
+import 'package:flutter_svg/svg.dart';
 
 class RoundPage extends StatefulWidget {
   final int roundNumber;
   final List<String> players;
+  final Map<String, int> totalScores;
 
   const RoundPage({
     super.key,
     required this.roundNumber,
     required this.players,
+    required this.totalScores,
   });
 
   @override
@@ -20,10 +22,10 @@ class RoundPage extends StatefulWidget {
 
 class _RoundPageState extends State<RoundPage> {
   int currentStep = 0;
-
   late Map<String, int?> bets;
   late Map<String, int?> tricks;
   late Map<String, String?> bonuses;
+  late ConfettiController _confettiController;
 
   @override
   void initState() {
@@ -31,6 +33,15 @@ class _RoundPageState extends State<RoundPage> {
     bets = {for (var p in widget.players) p: null};
     tricks = {for (var p in widget.players) p: null};
     bonuses = {for (var p in widget.players) p: null};
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 3),
+    );
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
   }
 
   bool get allBetsSelected => bets.values.every((v) => v != null);
@@ -40,7 +51,7 @@ class _RoundPageState extends State<RoundPage> {
     if (currentStep < 1) setState(() => currentStep++);
   }
 
-  void _finishRound() async {
+  void _finishRound() {
     final Map<String, Map<String, dynamic>> roundResults = {};
 
     for (var player in widget.players) {
@@ -54,65 +65,45 @@ class _RoundPageState extends State<RoundPage> {
         tricks: trick,
       );
 
-      final int total = bonus > 0 ? points + bonus : points;
-
+      final int total = points + bonus;
       roundResults[player] = {
         'mise': bet,
         'plis': trick,
         'points': points,
-        'bonus': bonus > 0 ? bonus : null,
+        'bonus': bonus,
         'total': total,
       };
+
+      widget.totalScores[player] = (widget.totalScores[player] ?? 0) + total;
     }
 
-    // ✅ On retourne d’abord les résultats
-    Navigator.pop(context, roundResults);
-
-    // ✅ Si c’est la dernière manche, on affiche le dialogue **après le retour**
-    if (widget.roundNumber == 10) {
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      if (!mounted) return; // ✅ évite le bug "widget unmounted"
-      _showEndGameDialog(context, _getWinnersFromScores(roundResults));
+    // ✅ Si ce n’est PAS la dernière manche, on revient simplement
+    if (widget.roundNumber < 10) {
+      Navigator.pop(context, roundResults);
+      return;
     }
-  }
 
-  int calculatePoints({
-    required int roundNumber,
-    required int bet,
-    required int tricks,
-  }) {
-    if (bet > 0 && bet == tricks) {
-      return 20 * bet;
-    } else if (bet > 0 && bet != tricks) {
-      return -10 * (bet - tricks).abs();
-    } else if (bet == 0 && bet == tricks) {
-      return 10 * roundNumber;
-    } else {
-      return -10 * roundNumber;
-    }
-  }
+    // ✅ Sinon, fin de partie → on calcule les gagnants et affiche le dialog
+    final sortedPlayers = widget.totalScores.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
-  List<String> _getWinnersFromScores(
-    Map<String, Map<String, dynamic>> results,
-  ) {
-    final totals = <String, int>{};
-    for (var player in results.keys) {
-      totals[player] = results[player]?['total'] ?? 0;
-    }
-    final maxScore = totals.values.reduce((a, b) => a > b ? a : b);
-    return totals.entries
-        .where((e) => e.value == maxScore)
-        .map((e) => e.key)
+    final highestScore = sortedPlayers.first.value;
+    final winners = sortedPlayers
+        .where((e) => e.value == highestScore)
         .toList();
+
+    _showEndGameDialog(context, winners, roundResults);
   }
 
-  void _showEndGameDialog(BuildContext context, List<String> winners) {
-    final confettiController = ConfettiController(
-      duration: const Duration(seconds: 5),
-    );
+  Future<void> _showEndGameDialog(
+    BuildContext context,
+    List<MapEntry<String, int>> winners,
+    Map<String, Map<String, dynamic>> roundResults,
+  ) async {
+    _confettiController.play();
 
-    confettiController.play();
+    final winnerNames = winners.map((w) => w.key).join(', ');
+    final winnerScore = winners.first.value;
 
     showDialog(
       context: context,
@@ -122,7 +113,7 @@ class _RoundPageState extends State<RoundPage> {
         children: [
           // 🎉 Confettis en fond
           ConfettiWidget(
-            confettiController: confettiController,
+            confettiController: _confettiController,
             blastDirectionality: BlastDirectionality.explosive,
             shouldLoop: false,
             emissionFrequency: 0.05,
@@ -199,17 +190,20 @@ class _RoundPageState extends State<RoundPage> {
                       ),
 
                       const SizedBox(height: 18),
-
                       Text(
-                        winners.length > 1
-                            ? "Égalité entre :\n${winners.join(', ')}"
-                            : "${winners.first} remporte la partie ! 🏆",
+                        "Vainqueur${winners.length > 1 ? 's' : ''} : $winnerNames",
                         textAlign: TextAlign.center,
                         style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
-                          height: 1.3,
+                        ),
+                      ),
+                      Text(
+                        "$winnerScore points",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.white70,
                         ),
                       ),
 
@@ -228,7 +222,8 @@ class _RoundPageState extends State<RoundPage> {
                           shadowColor: Colors.amberAccent.withOpacity(0.6),
                         ),
                         onPressed: () {
-                          Navigator.pop(context); // ✅ on ferme juste le dialog
+                          Navigator.pop(context);
+                          Navigator.pop(context, roundResults);
                         },
                         child: const Text(
                           "Voir les scores",
@@ -247,12 +242,21 @@ class _RoundPageState extends State<RoundPage> {
           ),
         ],
       ),
-    ).then((_) {
-      // ✅ On ne le libère qu'ici, une seule fois
-      confettiController.dispose();
-    });
+    );
   }
 
+  int calculatePoints({
+    required int roundNumber,
+    required int bet,
+    required int tricks,
+  }) {
+    if (bet > 0 && bet == tricks) return 20 * bet;
+    if (bet > 0 && bet != tricks) return -10 * (bet - tricks).abs();
+    if (bet == 0 && bet == tricks) return 10 * roundNumber;
+    return -10 * roundNumber;
+  }
+
+  // === UI ===
   @override
   Widget build(BuildContext context) {
     final round = widget.roundNumber;

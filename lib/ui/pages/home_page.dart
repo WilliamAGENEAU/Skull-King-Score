@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:skull_king/theme/app_theme.dart';
+import 'package:skull_king/ui/pages/palmares_page.dart';
 import 'package:skull_king/ui/widgets/skull_button.dart';
 import 'package:skull_king/ui/pages/player_selection_page.dart';
 
@@ -106,7 +107,27 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       },
                     ),
                     const SizedBox(height: 30),
-                    SkullButton(label: 'Palmarès', onPressed: () {}),
+                    SkullButton(
+                      label: 'Palmarès',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            transitionDuration: const Duration(
+                              milliseconds: 700,
+                            ),
+                            pageBuilder: (_, _, _) => PalmaresPage(),
+                            transitionsBuilder: (_, anim, _, child) =>
+                                FadeTransition(opacity: anim, child: child),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 30),
+                    SkullButton(
+                      label: 'Extensions (Bientôt)',
+                      onPressed: () {},
+                    ),
                   ],
                 ),
               ),
