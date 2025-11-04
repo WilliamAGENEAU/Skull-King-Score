@@ -1,6 +1,8 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:skull_king/ui/widgets/score_analysis_chart.dart';
 import 'package:skull_king/utils/save_winners.dart';
 
 class PalmaresPage extends StatefulWidget {
@@ -13,8 +15,7 @@ class PalmaresPage extends StatefulWidget {
 class _PalmaresPageState extends State<PalmaresPage> {
   List<Map<String, dynamic>> winnersHistory = [];
   Map<String, int> playerWins = {};
-  Map<String, int> playerGames =
-      {}; // 👈 nouveau pour compter les parties jouées
+  Map<String, int> playerGames = {};
 
   @override
   void initState() {
@@ -24,7 +25,6 @@ class _PalmaresPageState extends State<PalmaresPage> {
 
   Future<void> _loadHistory() async {
     final history = await loadWinnersHistory();
-
     final Map<String, int> winCount = {};
     final Map<String, int> gamesCount = {};
 
@@ -34,12 +34,9 @@ class _PalmaresPageState extends State<PalmaresPage> {
         game['players'] ?? winners,
       );
 
-      // 🔹 Comptage des victoires
       for (var winner in winners) {
         winCount[winner['name']] = (winCount[winner['name']] ?? 0) + 1;
       }
-
-      // 🔹 Comptage des parties jouées
       for (var player in allPlayers) {
         gamesCount[player['name']] = (gamesCount[player['name']] ?? 0) + 1;
       }
@@ -50,6 +47,11 @@ class _PalmaresPageState extends State<PalmaresPage> {
       playerWins = winCount;
       playerGames = gamesCount;
     });
+    for (var game in history) {
+      if (kDebugMode) {
+        print(game.keys);
+      } // affiche les clés disponibles dans chaque partie
+    }
   }
 
   Future<void> _deleteGame(int index) async {
@@ -90,7 +92,6 @@ class _PalmaresPageState extends State<PalmaresPage> {
           SafeArea(
             child: Column(
               children: [
-                // --- Bouton retour ---
                 Align(
                   alignment: Alignment.topLeft,
                   child: IconButton(
@@ -98,8 +99,6 @@ class _PalmaresPageState extends State<PalmaresPage> {
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
-
-                // --- Titre ---
                 const Text(
                   "Palmarès",
                   style: TextStyle(
@@ -110,7 +109,6 @@ class _PalmaresPageState extends State<PalmaresPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // --- Podium ---
                 if (playerWins.isNotEmpty)
                   _buildPodiumSection()
                 else
@@ -120,8 +118,6 @@ class _PalmaresPageState extends State<PalmaresPage> {
                   ),
 
                 const SizedBox(height: 20),
-
-                // --- Historique ---
                 const Text(
                   "Historique des parties",
                   style: TextStyle(
@@ -131,6 +127,7 @@ class _PalmaresPageState extends State<PalmaresPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
+
                 Expanded(
                   child: winnersHistory.isEmpty
                       ? const Center(
@@ -151,8 +148,52 @@ class _PalmaresPageState extends State<PalmaresPage> {
                             final allPlayers = List<Map<String, dynamic>>.from(
                               game['players'] ?? winners,
                             );
+                            dynamic rawRounds =
+                                game['roundsData'] ??
+                                game['scores'] ??
+                                game['rounds'] ??
+                                [];
+                            if (kDebugMode) {
+                              print("===== DEBUG ROUNDS DATA =====");
+                              print(rawRounds);
+                            }
+                            List<Map<String, dynamic>> roundsData = [];
 
-                            // tri des joueurs par score
+                            if (rawRounds is Map) {
+                              for (var entry in rawRounds.entries) {
+                                final roundNum = int.tryParse(entry.key) ?? 0;
+                                final roundScores = <String, dynamic>{};
+
+                                // 🔹 On cherche les scores dans chaque joueur
+                                (entry.value as Map).forEach((player, data) {
+                                  if (data is Map) {
+                                    // On privilégie le total de points, sinon points, sinon 0
+                                    roundScores[player] =
+                                        data['total'] ?? data['points'] ?? 0;
+                                  } else if (data is num) {
+                                    roundScores[player] = data;
+                                  }
+                                });
+
+                                roundsData.add({
+                                  'round': roundNum,
+                                  'scores': roundScores,
+                                });
+                              }
+
+                              // 🔹 On trie les manches
+                              roundsData.sort(
+                                (a, b) => (a['round'] as int).compareTo(
+                                  b['round'] as int,
+                                ),
+                              );
+                            } else if (rawRounds is List) {
+                              // Déjà sous forme de liste
+                              roundsData = List<Map<String, dynamic>>.from(
+                                rawRounds,
+                              );
+                            }
+
                             allPlayers.sort(
                               (a, b) =>
                                   (b['score'] ?? 0).compareTo(a['score'] ?? 0),
@@ -193,24 +234,15 @@ class _PalmaresPageState extends State<PalmaresPage> {
                                   ),
                                   children: [
                                     const Divider(color: Colors.black),
-                                    Column(
-                                      children: allPlayers
-                                          .map(
-                                            (p) => Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 4.0,
-                                                  ),
-                                              child: Text(
-                                                "${p['name']} - ${p['score']} pts",
-                                                style: const TextStyle(
-                                                  color: Colors.black87,
-                                                  fontSize: 16,
-                                                ),
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      child: ScoreAnalysisChart(
+                                        allPlayers: allPlayers,
+                                        roundsData: roundsData,
+                                      ),
                                     ),
                                     const SizedBox(height: 10),
                                     TextButton.icon(
@@ -239,7 +271,6 @@ class _PalmaresPageState extends State<PalmaresPage> {
     );
   }
 
-  /// Section podium (top 3)
   Widget _buildPodiumSection() {
     final sorted = playerWins.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -261,9 +292,7 @@ class _PalmaresPageState extends State<PalmaresPage> {
             children: sorted.take(3).map((e) {
               final name = e.key;
               final wins = e.value;
-              final games =
-                  playerGames[name] ??
-                  wins; // si pas trouvé, assume autant de jeux que de victoires
+              final games = playerGames[name] ?? wins;
               final ratio = (wins / games * 100).toStringAsFixed(1);
 
               final rank = sorted.indexOf(e) + 1;

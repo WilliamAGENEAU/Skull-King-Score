@@ -5,7 +5,7 @@ import 'package:skull_king/theme/app_theme.dart';
 import 'package:skull_king/ui/pages/home_page.dart';
 import 'package:skull_king/ui/pages/round_page.dart';
 import 'package:skull_king/ui/widgets/score_table.dart';
-import 'package:skull_king/utils/save_winners.dart'; // ✅ pour sauvegarder
+import 'package:skull_king/utils/save_winners.dart'; // ✅ pour sauvegarder les parties
 
 class ScorePage extends StatefulWidget {
   final List<String> players;
@@ -19,7 +19,7 @@ class ScorePage extends StatefulWidget {
 class _ScorePageState extends State<ScorePage> {
   int currentRound = 1;
   final Map<int, Map<String, Map<String, dynamic>>> allScores = {};
-  final Map<String, int> totalScores = {}; // ✅ suivi total
+  final Map<String, int> totalScores = {}; // ✅ suivi total des scores
 
   @override
   void initState() {
@@ -73,7 +73,7 @@ class _ScorePageState extends State<ScorePage> {
     );
   }
 
-  /// ✅ Calcule les scores finaux et les enregistre
+  /// ✅ Calcule les scores finaux et enregistre la partie
   Future<void> _saveFinalResults() async {
     final sortedPlayers = totalScores.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -88,7 +88,11 @@ class _ScorePageState extends State<ScorePage> {
         .map((e) => {'name': e.key, 'score': e.value})
         .toList();
 
-    await saveWinners(winners: winners, allPlayers: allPlayers);
+    await saveWinners(
+      winners: winners,
+      players: allPlayers, // liste finale (name + score)
+      rounds: allScores, // ton Map<int, Map<String, Map<String,dynamic>>>
+    );
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -103,6 +107,8 @@ class _ScorePageState extends State<ScorePage> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isLastRound = currentRound > 10;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -129,25 +135,16 @@ class _ScorePageState extends State<ScorePage> {
           /// --- Contenu principal ---
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 80.0,
-              ),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: ScoreTable(
-                      players: widget.players,
-                      currentRound: currentRound,
-                      allScores: allScores,
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 80),
+              child: ScoreTable(
+                players: widget.players,
+                currentRound: currentRound,
+                allScores: allScores,
               ),
             ),
           ),
 
-          /// --- Bouton "Manche suivante" ou "Terminer la partie" ---
+          /// --- Bouton bas droit ---
           SafeArea(
             child: Align(
               alignment: Alignment.bottomRight,
@@ -155,17 +152,16 @@ class _ScorePageState extends State<ScorePage> {
                 padding: const EdgeInsets.all(12.0),
                 child: ElevatedButton.icon(
                   icon: Icon(
-                    currentRound <= 10 ? Icons.play_arrow : Icons.flag,
+                    isLastRound ? Icons.flag : Icons.play_arrow,
                     color: Colors.white,
                   ),
                   label: Text(
-                    currentRound <= 10
-                        ? 'Manche $currentRound'
-                        : 'Terminer la partie',
+                    isLastRound ? 'Terminer la partie' : 'Manche $currentRound',
                     style: const TextStyle(color: Colors.white),
                   ),
                   onPressed: () async {
-                    if (currentRound <= 10) {
+                    if (!isLastRound) {
+                      // --- Lance la manche suivante ---
                       final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -182,17 +178,19 @@ class _ScorePageState extends State<ScorePage> {
                         setState(() {
                           allScores[currentRound] = result;
 
-                          // ✅ Mise à jour des totaux
+                          // ✅ Mise à jour des scores totaux
                           result.forEach((player, data) {
-                            final int pts = data['total'] ?? 0;
+                            final int pts = (data['score'] ?? 0)
+                                .toInt(); // cast sécurisé
                             totalScores[player] =
-                                (totalScores[player] ?? 0) + (pts);
+                                (totalScores[player] ?? 0) + pts;
                           });
 
                           currentRound++;
                         });
                       }
                     } else {
+                      // --- Fin de partie ---
                       await _saveFinalResults();
                       Navigator.pushAndRemoveUntil(
                         context,

@@ -1,73 +1,62 @@
+// ignore_for_file: unintended_html_in_doc_comment
+
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Sauvegarde une partie dans l'historique.
-/// [winners] : liste des gagnants {name, score}
-/// [allPlayers] : liste complète des joueurs avec leur score final
+const String _kWinnersKey = 'winners_history_v2';
+
+/// Sauvegarde une partie complète:
+/// - winners: liste des vainqueurs avec leur score [{'name':..,'score':..}, ...]
+/// - players: liste complète des joueurs finaux [{'name':..,'score':..}, ...]
+/// - rounds: Map<int, Map<String, Map<String,dynamic>>> (roundNumber -> player -> data)
 Future<void> saveWinners({
   required List<Map<String, dynamic>> winners,
-  required List<Map<String, dynamic>> allPlayers,
+  required List<Map<String, dynamic>> players,
+  required Map<int, Map<String, Map<String, dynamic>>> rounds,
 }) async {
   final prefs = await SharedPreferences.getInstance();
 
-  // Récupération de l'historique existant
-  final String? existingData = prefs.getString('winners_history');
-  List<Map<String, dynamic>> history = [];
+  final entry = <String, dynamic>{
+    'date': DateTime.now().toIso8601String(),
+    'winners': winners,
+    'players': players,
+    // rounds : convert keys to strings for JSON-friendly map
+    'rounds': rounds.map((k, v) => MapEntry(k.toString(), v)),
+  };
 
-  if (existingData != null && existingData.isNotEmpty) {
+  final List<String> list = prefs.getStringList(_kWinnersKey) ?? [];
+  list.add(jsonEncode(entry));
+  await prefs.setStringList(_kWinnersKey, list);
+}
+
+/// Charge tout l'historique (liste d'objets decodés).
+/// Retourne List<Map<String,dynamic>>
+Future<List<Map<String, dynamic>>> loadWinnersHistory() async {
+  final prefs = await SharedPreferences.getInstance();
+  final List<String>? raw = prefs.getStringList(_kWinnersKey);
+  if (raw == null) return [];
+
+  final List<Map<String, dynamic>> out = [];
+  for (var s in raw) {
     try {
-      history = List<Map<String, dynamic>>.from(jsonDecode(existingData));
+      final decoded = jsonDecode(s) as Map<String, dynamic>;
+      // restore rounds keys to int if desired (we can keep as string)
+      out.add(decoded);
     } catch (_) {
-      history = [];
+      // ignore malformed entries
     }
   }
 
-  // Ajout de la nouvelle partie
-  final newEntry = {
-    'date': DateTime.now().toIso8601String(),
-    'winners': winners,
-    'players': allPlayers,
-  };
-
-  history.add(newEntry);
-
-  // Sauvegarde mise à jour
-  await prefs.setString('winners_history', jsonEncode(history));
+  return out;
 }
 
-/// Charge tout l'historique des parties sauvegardées
-Future<List<Map<String, dynamic>>> loadWinnersHistory() async {
+/// Supprime une partie de l'historique par index (0 = la plus ancienne).
+Future<void> deleteGameFromHistory(int indexFromOldest) async {
   final prefs = await SharedPreferences.getInstance();
-  final String? data = prefs.getString('winners_history');
+  final List<String>? raw = prefs.getStringList(_kWinnersKey);
+  if (raw == null) return;
+  if (indexFromOldest < 0 || indexFromOldest >= raw.length) return;
 
-  if (data == null || data.isEmpty) return [];
-
-  try {
-    return List<Map<String, dynamic>>.from(jsonDecode(data));
-  } catch (_) {
-    return [];
-  }
-}
-
-/// Supprime une partie spécifique de l'historique
-Future<void> deleteGameFromHistory(int index) async {
-  final prefs = await SharedPreferences.getInstance();
-  final String? data = prefs.getString('winners_history');
-
-  if (data == null || data.isEmpty) return;
-
-  List<Map<String, dynamic>> history = List<Map<String, dynamic>>.from(
-    jsonDecode(data),
-  );
-
-  if (index >= 0 && index < history.length) {
-    history.removeAt(index);
-    await prefs.setString('winners_history', jsonEncode(history));
-  }
-}
-
-/// Vide complètement l'historique
-Future<void> clearWinnersHistory() async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.remove('winners_history');
+  raw.removeAt(indexFromOldest);
+  await prefs.setStringList(_kWinnersKey, raw);
 }
