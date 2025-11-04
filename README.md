@@ -1,6 +1,6 @@
-# 🏆 ScoreMaster – Suivi et Analyse des Scores de Jeu
+# 🏆 Skull King App – Suivi et Analyse des Scores du jeu Skull King
 
-**ScoreMaster** est une application Flutter moderne permettant de **suivre, enregistrer et analyser les scores** de plusieurs joueurs sur différentes manches.  
+**Skull King App** est une application Flutter moderne permettant de **suivre, enregistrer et analyser les scores** de plusieurs joueurs sur différentes manches.  
 Elle offre un design fluide, une interface intuitive et des graphiques dynamiques pour visualiser la progression de chaque joueur.  
 
 ---
