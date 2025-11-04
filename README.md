@@ -7,10 +7,11 @@ Elle offre un design fluide, une interface intuitive et des graphiques dynamique
 
 ## 📸 Aperçu de l’application
 
-| Accueil | Nouvelle partie | Graphique d’analyse |
+| Accueil | Nouvelle partie | Scores |
 |:--:|:--:|:--:|
 | ![Accueil](assets/image1.jpg) | ![Nouvelle partie](assets/image2.jpg) | ![Graphique](assets/image3.jpg) |
 
+| Manches | Graphique d’analyse | 
 |:--:|:--:|
 | ![Historique](assets/image4.jpg) | ![Classement](assets/image5.jpg) |
 
