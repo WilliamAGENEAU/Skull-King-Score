@@ -9,10 +9,10 @@ Elle offre un design fluide, une interface intuitive et des graphiques dynamique
 
 | Accueil | Nouvelle partie | Graphique d’analyse |
 |:--:|:--:|:--:|
-| ![Accueil](assets/screenshots/image1.jpg) | ![Nouvelle partie](assets/screenshots/image2.jpg) | ![Graphique](assets/screenshots/image3.jpg) |
+| ![Accueil](assets/image1.jpg) | ![Nouvelle partie](assets/image2.jpg) | ![Graphique](assets/image3.jpg) |
 
 |:--:|:--:|
-| ![Historique](assets/screenshots/image4.jpg) | ![Classement](assets/screenshots/image5.jpg) |
+| ![Historique](assets/image4.jpg) | ![Classement](assets/image5.jpg) |
 
 ---
 
