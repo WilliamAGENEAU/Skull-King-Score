@@ -67,7 +67,7 @@ class _PlayerSelectionPageState extends State<PlayerSelectionPage>
               backgroundColor: AppTheme.primaryGold,
             ),
             onPressed: () {
-              Navigator.pop(context); // Ferme le dialogue
+              Navigator.pop(context);
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => const HomePage()),
@@ -87,7 +87,8 @@ class _PlayerSelectionPageState extends State<PlayerSelectionPage>
   void _addPlayer() async {
     if (_players.length >= 8) return;
 
-    final TextEditingController nameController = TextEditingController();
+    final TextEditingController firstNameController = TextEditingController();
+    final TextEditingController lastNameController = TextEditingController();
 
     await showDialog(
       context: context,
@@ -101,19 +102,45 @@ class _PlayerSelectionPageState extends State<PlayerSelectionPage>
             "Nouveau joueur",
             style: TextStyle(color: AppTheme.primaryGold),
           ),
-          content: TextField(
-            controller: nameController,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
-              hintText: "Entrez un prénom",
-              hintStyle: TextStyle(color: Colors.white54),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: AppTheme.primaryGold),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: firstNameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: "Prénom",
+                  hintStyle: TextStyle(color: Colors.white54),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppTheme.primaryGold),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(
+                      color: AppTheme.primaryGold,
+                      width: 2,
+                    ),
+                  ),
+                ),
               ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: AppTheme.primaryGold, width: 2),
+              const SizedBox(height: 10),
+              TextField(
+                controller: lastNameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: "Nom de famille",
+                  hintStyle: TextStyle(color: Colors.white54),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppTheme.primaryGold),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(
+                      color: AppTheme.primaryGold,
+                      width: 2,
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
           actions: [
             TextButton(
@@ -128,10 +155,18 @@ class _PlayerSelectionPageState extends State<PlayerSelectionPage>
                 backgroundColor: AppTheme.primaryGold,
               ),
               onPressed: () {
-                final name = nameController.text.trim();
-                if (name.isNotEmpty) {
-                  setState(() => _players.add(name));
+                final firstName = firstNameController.text.trim();
+                final lastName = lastNameController.text.trim();
+
+                if (firstName.isNotEmpty && lastName.isNotEmpty) {
+                  final formattedName =
+                      "${_capitalize(firstName)} ${lastName[0].toUpperCase()}.";
+                  setState(() => _players.add(formattedName));
+                } else if (firstName.isNotEmpty) {
+                  // si seul le prénom est saisi
+                  setState(() => _players.add(_capitalize(firstName)));
                 }
+
                 Navigator.pop(context);
               },
               child: const Text(
@@ -145,6 +180,10 @@ class _PlayerSelectionPageState extends State<PlayerSelectionPage>
     );
   }
 
+  String _capitalize(String text) => text.isEmpty
+      ? text
+      : text[0].toUpperCase() + text.substring(1).toLowerCase();
+
   void _removePlayer(String name) {
     setState(() => _players.remove(name));
   }
@@ -154,14 +193,10 @@ class _PlayerSelectionPageState extends State<PlayerSelectionPage>
     return Scaffold(
       body: Stack(
         children: [
-          // Image de fond
           Positioned.fill(
             child: Image.asset('assets/images/papier.jpg', fit: BoxFit.cover),
           ),
-
-          // Légère teinte pour le contraste
           Container(color: Colors.black.withOpacity(0.2)),
-          // Bouton menu haut droit
           SafeArea(
             child: Align(
               alignment: Alignment.topLeft,
@@ -175,7 +210,6 @@ class _PlayerSelectionPageState extends State<PlayerSelectionPage>
               ),
             ),
           ),
-          // Contenu centré
           FadeTransition(
             opacity: _fadeAnimation,
             child: Center(
@@ -197,8 +231,6 @@ class _PlayerSelectionPageState extends State<PlayerSelectionPage>
               ),
             ),
           ),
-
-          // Bouton Play en bas à droite
           Positioned(
             bottom: 25,
             right: 25,

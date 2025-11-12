@@ -15,10 +15,20 @@ class PlayerAvatar extends StatelessWidget {
     this.onRemove,
   });
 
+  String _getInitials(String name) {
+    final parts = name.split(' ');
+    if (parts.length == 1) {
+      return parts.first[0].toUpperCase();
+    } else {
+      final first = parts[0].isNotEmpty ? parts[0][0].toUpperCase() : '';
+      final last = parts[1].isNotEmpty ? parts[1][0].toUpperCase() : '';
+      return "$first$last";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (name == null) {
-      // Rond avec un plus (ajout de joueur)
       return GestureDetector(
         onTap: onAddPressed,
         child: Container(
@@ -34,7 +44,7 @@ class PlayerAvatar extends StatelessWidget {
       );
     }
 
-    final String initial = name!.isNotEmpty ? name![0].toUpperCase() : '?';
+    final String initials = _getInitials(name!);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -51,16 +61,15 @@ class PlayerAvatar extends StatelessWidget {
           ),
           child: Center(
             child: Text(
-              initial,
+              initials,
               style: const TextStyle(
-                fontSize: 28,
+                fontSize: 26,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
           ),
         ),
-        // Croix de suppression
         if (onRemove != null)
           Positioned(
             top: -6,

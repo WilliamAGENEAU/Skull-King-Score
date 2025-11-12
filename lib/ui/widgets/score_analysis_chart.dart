@@ -24,22 +24,23 @@ class ScoreAnalysisChart extends StatelessWidget {
 
     final List<double> allYValues = [];
 
-    final List<Color> availableColors = [
-      Colors.red,
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.teal,
-      Colors.pink,
-      Colors.brown,
-      Colors.cyan,
-    ];
-
+    // 🎨 Générateur dynamique de couleurs claires uniques pour chaque joueur
     Color colorForPlayer(String name) {
-      final index =
-          name.codeUnits.fold(0, (a, b) => a + b) % availableColors.length;
-      return availableColors[index];
+      // On transforme le nom en nombre pour garantir une couleur stable
+      final hash = name.codeUnits.fold(0, (a, b) => a + b);
+
+      // Génère des teintes et saturations dans un spectre clair et varié
+      final hue = (hash * 37) % 360; // variation de la teinte
+      const saturation = 0.45; // ton pastel (0 = gris, 1 = vif)
+      const lightness = 0.65; // plus clair que la moyenne
+
+      // Conversion HSL → Color
+      return HSLColor.fromAHSL(
+        1.0,
+        hue.toDouble(),
+        saturation,
+        lightness,
+      ).toColor();
     }
 
     final List<LineChartBarData> lineBarsData = [];
@@ -92,7 +93,7 @@ class ScoreAnalysisChart extends StatelessWidget {
     return Column(
       children: [
         SizedBox(
-          height: 220,
+          height: 260,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: LineChart(
@@ -117,6 +118,51 @@ class ScoreAnalysisChart extends StatelessWidget {
                   getDrawingVerticalLine: (_) =>
                       const FlLine(color: Colors.black26, strokeWidth: 0.6),
                 ),
+
+                // 🎯 Tooltip coloré et centré
+                lineTouchData: LineTouchData(
+                  enabled: true,
+                  touchTooltipData: LineTouchTooltipData(
+                    fitInsideHorizontally: true,
+                    fitInsideVertically: true,
+                    tooltipPadding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((spot) {
+                        final playerColor = spot.bar.color ?? Colors.white;
+
+                        return LineTooltipItem(
+                          "${spot.y.toStringAsFixed(0)} pts",
+                          TextStyle(
+                            color: playerColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                  getTouchedSpotIndicator:
+                      (LineChartBarData barData, List<int> spotIndexes) {
+                        return spotIndexes.map((index) {
+                          return TouchedSpotIndicatorData(
+                            const FlLine(color: Colors.black26, strokeWidth: 1),
+                            FlDotData(
+                              show: true,
+                              getDotPainter: (_, _, _, _) => FlDotCirclePainter(
+                                radius: 5,
+                                color: barData.color ?? Colors.black,
+                                strokeWidth: 2,
+                                strokeColor: Colors.white,
+                              ),
+                            ),
+                          );
+                        }).toList();
+                      },
+                ),
+
                 titlesData: FlTitlesData(
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(

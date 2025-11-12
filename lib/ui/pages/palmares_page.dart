@@ -1,6 +1,5 @@
-// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use, curly_braces_in_flow_control_structures
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:skull_king/ui/widgets/score_analysis_chart.dart';
 import 'package:skull_king/utils/save_winners.dart';
@@ -47,11 +46,6 @@ class _PalmaresPageState extends State<PalmaresPage> {
       playerWins = winCount;
       playerGames = gamesCount;
     });
-    for (var game in history) {
-      if (kDebugMode) {
-        print(game.keys);
-      } // affiche les clés disponibles dans chaque partie
-    }
   }
 
   Future<void> _deleteGame(int index) async {
@@ -107,7 +101,7 @@ class _PalmaresPageState extends State<PalmaresPage> {
                     color: Colors.black,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 15),
 
                 if (playerWins.isNotEmpty)
                   _buildPodiumSection()
@@ -153,10 +147,7 @@ class _PalmaresPageState extends State<PalmaresPage> {
                                 game['scores'] ??
                                 game['rounds'] ??
                                 [];
-                            if (kDebugMode) {
-                              print("===== DEBUG ROUNDS DATA =====");
-                              print(rawRounds);
-                            }
+
                             List<Map<String, dynamic>> roundsData = [];
 
                             if (rawRounds is Map) {
@@ -288,54 +279,71 @@ class _PalmaresPageState extends State<PalmaresPage> {
             ),
           ),
           const SizedBox(height: 16),
-          Column(
-            children: sorted.take(3).map((e) {
-              final name = e.key;
-              final wins = e.value;
-              final games = playerGames[name] ?? wins;
-              final ratio = (wins / games * 100).toStringAsFixed(1);
 
-              final rank = sorted.indexOf(e) + 1;
-              final medal = rank == 1
-                  ? "🥇"
-                  : rank == 2
-                  ? "🥈"
-                  : "🥉";
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6.0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.black54),
-                    color: Colors.white.withOpacity(0.0),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "$medal $name",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
+          // 🔹 On limite visuellement à 4 joueurs visibles avec scroll
+          SizedBox(
+            height: 230,
+            child: ListView.builder(
+              itemCount: sorted.length,
+              itemBuilder: (context, index) {
+                final name = sorted[index].key;
+                final wins = sorted[index].value;
+                final games = playerGames[name] ?? wins;
+                final ratio = (wins / games * 100).toStringAsFixed(1);
+
+                String medal = "";
+                if (index == 0) {
+                  medal = "🥇";
+                } else if (index == 1)
+                  medal = "🥈";
+                else if (index == 2)
+                  medal = "🥉";
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6.0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.black54),
+                      color: Colors.white.withOpacity(0.0),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            if (medal.isNotEmpty)
+                              Text(
+                                "$medal ",
+                                style: const TextStyle(fontSize: 20),
+                              ),
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Text(
-                        "$wins / $games victoire${wins > 1 ? 's' : ''}  ($ratio%)",
-                        style: const TextStyle(
-                          color: Colors.black87,
-                          fontSize: 15,
+                        Text(
+                          "$wins / $games victoire${wins > 1 ? 's' : ''}  ($ratio%)",
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 15,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            }).toList(),
+                );
+              },
+            ),
           ),
         ],
       ),

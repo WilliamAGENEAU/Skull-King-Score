@@ -51,6 +51,18 @@ class _RoundPageState extends State<RoundPage> {
     if (currentStep < 1) setState(() => currentStep++);
   }
 
+  String _getInitials(String name) {
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    } else if (name.length >= 2) {
+      return name.substring(0, 2).toUpperCase();
+    } else if (name.isNotEmpty) {
+      return name[0].toUpperCase();
+    }
+    return '?';
+  }
+
   void _finishRound() {
     final Map<String, Map<String, dynamic>> roundResults = {};
 
@@ -301,6 +313,15 @@ class _RoundPageState extends State<RoundPage> {
                             _nextStep();
                           }
                         },
+                        // 🧭 Ajout ici : possibilité de revenir à une étape précédente
+                        onStepTapped: (step) {
+                          setState(() {
+                            // On autorise de revenir à la step précédente
+                            if (step <= currentStep) {
+                              currentStep = step;
+                            }
+                          });
+                        },
                         steps: [
                           Step(
                             title: const Text(
@@ -387,10 +408,10 @@ class _RoundPageState extends State<RoundPage> {
               radius: 28,
               backgroundColor: Colors.black,
               child: Text(
-                player.substring(0, 1).toUpperCase(),
+                _getInitials(player),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -454,10 +475,10 @@ class _RoundPageState extends State<RoundPage> {
               radius: 28,
               backgroundColor: Colors.black,
               child: Text(
-                player.substring(0, 1).toUpperCase(),
+                _getInitials(player),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
