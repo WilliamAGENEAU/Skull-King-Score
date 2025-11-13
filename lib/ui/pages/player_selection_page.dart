@@ -194,7 +194,10 @@ class _PlayerSelectionPageState extends State<PlayerSelectionPage>
       body: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset('assets/images/papier.jpg', fit: BoxFit.cover),
+            child: Image.asset(
+              'assets/images/players_selector.png',
+              fit: BoxFit.cover,
+            ),
           ),
           Container(color: Colors.black.withOpacity(0.2)),
           SafeArea(
