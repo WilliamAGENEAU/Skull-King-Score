@@ -24,18 +24,24 @@ class RoundPage extends StatefulWidget {
 
 class _RoundPageState extends State<RoundPage> {
   int currentStep = 0;
+
   late Map<String, int?> bets;
   late Map<String, int?> tricks;
-  late Map<String, String?> bonuses;
+
+  /// ⚠️ CHANGEMENT ICI → `int` et plus `String?`
+  late Map<String, int> bonuses;
 
   late ConfettiController _confetti;
 
   @override
   void initState() {
     super.initState();
+
     bets = {for (var p in widget.players) p: null};
     tricks = {for (var p in widget.players) p: null};
-    bonuses = {for (var p in widget.players) p: null};
+
+    /// 🟢 Nouvel init correct
+    bonuses = {for (var p in widget.players) p: 0};
 
     _confetti = ConfettiController(duration: const Duration(seconds: 3));
   }
@@ -58,7 +64,9 @@ class _RoundPageState extends State<RoundPage> {
     for (final p in widget.players) {
       final bet = bets[p] ?? 0;
       final trick = tricks[p] ?? 0;
-      final bonus = int.tryParse(bonuses[p] ?? "0") ?? 0;
+
+      /// 💥 FINI les String à parser
+      final bonus = bonuses[p] ?? 0;
 
       final points = _calculatePoints(widget.roundNumber, bet, trick);
       final total = points + bonus;
@@ -74,18 +82,16 @@ class _RoundPageState extends State<RoundPage> {
       };
     }
 
-    // ⏭️ Si on n'est pas au dernier tour → on retourne au tableau de marque
     if (widget.roundNumber < 10) {
       Navigator.pop(context, results);
       return;
     }
 
-    // 🎉 FIN DE PARTIE
     final sorted = widget.totalScores.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    final bestScore = sorted.first.value;
-    final winners = sorted.where((e) => e.value == bestScore).toList();
+    final best = sorted.first.value;
+    final winners = sorted.where((e) => e.value == best).toList();
 
     showEndGameDialog(context, winners, results, _confetti);
   }
@@ -118,13 +124,13 @@ class _RoundPageState extends State<RoundPage> {
                     "Manche $round",
                     style: const TextStyle(
                       fontSize: 26,
-                      color: Colors.black,
                       fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
                   ),
+
                   const SizedBox(height: 20),
 
-                  // ------------------ STEPPER ------------------
                   Expanded(
                     child: Theme(
                       data: Theme.of(context).copyWith(
@@ -137,18 +143,20 @@ class _RoundPageState extends State<RoundPage> {
                       child: Stepper(
                         currentStep: currentStep,
                         type: StepperType.vertical,
-                        controlsBuilder: (_, _) => const SizedBox.shrink(),
-                        onStepTapped: (s) => setState(
-                          () =>
-                              currentStep = s <= currentStep ? s : currentStep,
-                        ),
+                        controlsBuilder: (_, _) =>
+                            const SizedBox.shrink(), // 🔇
+
+                        onStepTapped: (step) => setState(() {
+                          if (step <= currentStep) currentStep = step;
+                        }),
+
                         steps: [
                           Step(
                             title: const Text(
                               "Mise",
                               style: TextStyle(
-                                color: Colors.black,
                                 fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
                             ),
                             state: allBetsSelected
@@ -173,20 +181,24 @@ class _RoundPageState extends State<RoundPage> {
                             title: const Text(
                               "Plis / Bonus",
                               style: TextStyle(
-                                color: Colors.black,
                                 fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
                             ),
                             state: allTricksSelected
                                 ? StepState.complete
                                 : StepState.indexed,
                             isActive: currentStep >= 1,
-                            content: RoundTrickStep(
-                              players: widget.players,
-                              tricks: tricks,
-                              bonuses: bonuses,
-                              onInputChanged: () => setState(() {}),
-                              roundNumber: widget.roundNumber, // ⬅️ AJOUT ICI
+                            content: SizedBox(
+                              height:
+                                  350, // ⬅️ espace scrollable fixé et garanti
+                              child: RoundTrickStep(
+                                players: widget.players,
+                                tricks: tricks,
+                                bonuses: bonuses,
+                                onInputChanged: () => setState(() {}),
+                                roundNumber: widget.roundNumber,
+                              ),
                             ),
                           ),
                         ],
@@ -194,9 +206,9 @@ class _RoundPageState extends State<RoundPage> {
                     ),
                   ),
 
-                  // ------------------ BOUTON RESULTAT ------------------
                   if (currentStep == 1 && allTricksSelected)
                     ElevatedButton(
+                      onPressed: _finishRound,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
                         padding: const EdgeInsets.symmetric(
@@ -207,7 +219,6 @@ class _RoundPageState extends State<RoundPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      onPressed: _finishRound,
                       child: const Text(
                         "Résultat",
                         style: TextStyle(

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:skull_king/ui/pages/round/steps/avatar_bonus.dart';
 
-class RoundTrickStep extends StatelessWidget {
+class RoundTrickStep extends StatefulWidget {
   final List<String> players;
   final Map<String, int?> tricks;
-  final Map<String, String?> bonuses;
+  final Map<String, int> bonuses;
   final VoidCallback onInputChanged;
-  final int roundNumber; // ⬅️ NOUVEAU
+  final int roundNumber;
 
   const RoundTrickStep({
     super.key,
@@ -14,114 +14,119 @@ class RoundTrickStep extends StatelessWidget {
     required this.tricks,
     required this.bonuses,
     required this.onInputChanged,
-    required this.roundNumber, // ⬅️ OBLIGATOIRE
+    required this.roundNumber,
   });
 
-  bool _allPlayersFilled() => tricks.values.every((v) => v != null);
+  @override
+  State<RoundTrickStep> createState() => _RoundTrickStepState();
+}
 
+class _RoundTrickStepState extends State<RoundTrickStep> {
   @override
   Widget build(BuildContext context) {
-    /// 👇 CORRECTION → 0 → numéro de manche
-    final plisOptions = List<int>.generate(roundNumber + 1, (i) => i);
+    final plisOptions = List<int>.generate(widget.roundNumber + 1, (i) => i);
 
-    return Column(
-      children: [
-        GridView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 1.25,
-            crossAxisSpacing: 20,
-            mainAxisSpacing: 20,
-          ),
-          itemCount: players.length,
-          itemBuilder: (context, i) {
-            final p = players[i];
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.8,
+              mainAxisSpacing: 18,
+              crossAxisSpacing: 18,
+            ),
+            itemCount: widget.players.length,
+            itemBuilder: (_, i) {
+              final p = widget.players[i];
+              final bonusActive = (widget.bonuses[p] ?? 0) > 0;
 
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                PlisAvatar(name: p),
-                const SizedBox(height: 6),
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PlisAvatar(name: p),
+                  const SizedBox(height: 6),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: DropdownButton<int>(
-                        value: tricks[p],
-                        hint: const Text(
-                          "Plis",
-                          style: TextStyle(color: Colors.white),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        dropdownColor: Colors.black,
-                        underline: const SizedBox(),
-                        iconEnabledColor: Colors.white,
-                        items: plisOptions
-                            .map(
-                              (v) => DropdownMenuItem(
-                                value: v,
-                                child: Text(
-                                  "$v",
-                                  style: const TextStyle(color: Colors.white),
+                        child: DropdownButton<int>(
+                          value: widget.tricks[p],
+                          dropdownColor: Colors.black,
+                          underline: const SizedBox(),
+                          iconEnabledColor: Colors.white,
+                          hint: const Text(
+                            "Plis",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          items: plisOptions
+                              .map(
+                                (v) => DropdownMenuItem(
+                                  value: v,
+                                  child: Text(
+                                    "$v",
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
                                 ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (val) {
-                          tricks[p] = val;
-                          onInputChanged();
-                        },
+                              )
+                              .toList(),
+                          onChanged: (v) {
+                            setState(() => widget.tricks[p] = v);
+                            widget.onInputChanged();
+                          },
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(width: 8),
+                      const SizedBox(width: 8),
 
-                    SizedBox(
-                      width: 65,
-                      child: TextField(
-                        keyboardType: TextInputType.number,
-                        onChanged: (val) {
-                          bonuses[p] = val.isEmpty ? null : val;
-                          onInputChanged();
-                        },
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.black,
-                          hintText: "Bonus",
-                          hintStyle: const TextStyle(color: Colors.white70),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 6,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 15,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          "+${widget.bonuses[p] ?? 0}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
-                        style: const TextStyle(color: Colors.white),
                       ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  IconButton(
+                    onPressed: () {
+                      setState(() => widget.bonuses[p] = bonusActive ? 0 : 10);
+                      widget.onInputChanged();
+                    },
+                    icon: Icon(
+                      Icons.star,
+                      size: 32,
+                      color: bonusActive ? Colors.amber : Colors.grey,
                     ),
-                  ],
-                ),
-              ],
-            );
-          },
-        ),
-
-        const SizedBox(height: 20),
-
-        if (_allPlayersFilled())
-          const Text(
-            "✔️ Tous les plis ont été renseignés",
-            style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              );
+            },
           ),
-      ],
+        ],
+      ),
     );
   }
 }
