@@ -27,8 +27,6 @@ class _RoundPageState extends State<RoundPage> {
 
   late Map<String, int?> bets;
   late Map<String, int?> tricks;
-
-  /// ⚠️ CHANGEMENT ICI → `int` et plus `String?`
   late Map<String, int> bonuses;
 
   late ConfettiController _confetti;
@@ -36,11 +34,8 @@ class _RoundPageState extends State<RoundPage> {
   @override
   void initState() {
     super.initState();
-
     bets = {for (var p in widget.players) p: null};
     tricks = {for (var p in widget.players) p: null};
-
-    /// 🟢 Nouvel init correct
     bonuses = {for (var p in widget.players) p: 0};
 
     _confetti = ConfettiController(duration: const Duration(seconds: 3));
@@ -57,15 +52,13 @@ class _RoundPageState extends State<RoundPage> {
 
   void _nextStep() => setState(() => currentStep++);
 
-  // ------------------ FIN DE MANCHE ------------------
+  // ---------------- FIN MANCHE ----------------
   void _finishRound() {
     final results = <String, Map<String, dynamic>>{};
 
     for (final p in widget.players) {
       final bet = bets[p] ?? 0;
       final trick = tricks[p] ?? 0;
-
-      /// 💥 FINI les String à parser
       final bonus = bonuses[p] ?? 0;
 
       final points = _calculatePoints(widget.roundNumber, bet, trick);
@@ -87,6 +80,7 @@ class _RoundPageState extends State<RoundPage> {
       return;
     }
 
+    /// 🎉 FIN DE PARTIE
     final sorted = widget.totalScores.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
@@ -113,25 +107,25 @@ class _RoundPageState extends State<RoundPage> {
           Positioned.fill(
             child: Image.asset("assets/images/papier.jpg", fit: BoxFit.cover),
           ),
-          Container(color: Colors.black.withOpacity(0.05)),
 
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              child: Column(
-                children: [
-                  Text(
-                    "Manche $round",
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+
+                Text(
+                  "Manche $round",
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
+                ),
 
-                  const SizedBox(height: 20),
+                const SizedBox(height: 10),
 
-                  Expanded(
+                Expanded(
+                  child: SingleChildScrollView(
                     child: Theme(
                       data: Theme.of(context).copyWith(
                         colorScheme: const ColorScheme.light(
@@ -142,9 +136,8 @@ class _RoundPageState extends State<RoundPage> {
                       ),
                       child: Stepper(
                         currentStep: currentStep,
-                        type: StepperType.vertical,
-                        controlsBuilder: (_, _) =>
-                            const SizedBox.shrink(), // 🔇
+                        physics: const NeverScrollableScrollPhysics(),
+                        controlsBuilder: (_, _) => const SizedBox.shrink(),
 
                         onStepTapped: (step) => setState(() {
                           if (step <= currentStep) currentStep = step;
@@ -166,17 +159,16 @@ class _RoundPageState extends State<RoundPage> {
                             content: RoundBetStep(
                               players: widget.players,
                               bets: bets,
-                              roundNumber: round,
                               onBetChanged: (p, v) {
                                 setState(() {
                                   bets[p] = v;
                                   if (allBetsSelected) _nextStep();
                                 });
                               },
+                              roundNumber: round,
                               onNext: _nextStep,
                             ),
                           ),
-
                           Step(
                             title: const Text(
                               "Plis / Bonus",
@@ -189,47 +181,38 @@ class _RoundPageState extends State<RoundPage> {
                                 ? StepState.complete
                                 : StepState.indexed,
                             isActive: currentStep >= 1,
-                            content: SizedBox(
-                              height:
-                                  350, // ⬅️ espace scrollable fixé et garanti
-                              child: RoundTrickStep(
-                                players: widget.players,
-                                tricks: tricks,
-                                bonuses: bonuses,
-                                onInputChanged: () => setState(() {}),
-                                roundNumber: widget.roundNumber,
-                              ),
+                            content: RoundTrickStep(
+                              players: widget.players,
+                              tricks: tricks,
+                              bonuses: bonuses,
+                              onInputChanged: () => setState(() {}),
+                              roundNumber: widget.roundNumber,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
+                ),
 
-                  if (currentStep == 1 && allTricksSelected)
-                    ElevatedButton(
-                      onPressed: _finishRound,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 14,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        "Résultat",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                if (currentStep == 1 && allTricksSelected)
+                  ElevatedButton(
+                    onPressed: _finishRound,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 42,
+                        vertical: 12,
                       ),
                     ),
-                ],
-              ),
+                    child: const Text(
+                      "Résultat",
+                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    ),
+                  ),
+
+                const SizedBox(height: 12),
+              ],
             ),
           ),
         ],
