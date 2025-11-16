@@ -139,7 +139,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             child: FadeTransition(
               opacity: _fadeAnimation,
               child: const Text(
-                'v1.0.0 • William Ageneau',
+                'v1.1 • William Ageneau',
                 style: TextStyle(
                   color: AppTheme.textWhite,
                   fontSize: 12,
