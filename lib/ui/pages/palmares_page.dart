@@ -263,8 +263,13 @@ class _PalmaresPageState extends State<PalmaresPage> {
   }
 
   Widget _buildPodiumSection() {
-    final sorted = playerWins.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    // 🔹 Trie par winrate décroissant
+    final sorted = playerWins.keys.toList()
+      ..sort((a, b) {
+        final winRateA = playerWins[a]! / (playerGames[a] ?? 1);
+        final winRateB = playerWins[b]! / (playerGames[b] ?? 1);
+        return winRateB.compareTo(winRateA);
+      });
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -280,21 +285,20 @@ class _PalmaresPageState extends State<PalmaresPage> {
           ),
           const SizedBox(height: 16),
 
-          // 🔹 On limite visuellement à 4 joueurs visibles avec scroll
           SizedBox(
             height: 230,
             child: ListView.builder(
               itemCount: sorted.length,
               itemBuilder: (context, index) {
-                final name = sorted[index].key;
-                final wins = sorted[index].value;
-                final games = playerGames[name] ?? wins;
+                final name = sorted[index];
+                final wins = playerWins[name] ?? 0;
+                final games = playerGames[name] ?? 1;
                 final ratio = (wins / games * 100).toStringAsFixed(1);
 
                 String medal = "";
-                if (index == 0) {
+                if (index == 0)
                   medal = "🥇";
-                } else if (index == 1)
+                else if (index == 1)
                   medal = "🥈";
                 else if (index == 2)
                   medal = "🥉";
@@ -332,7 +336,7 @@ class _PalmaresPageState extends State<PalmaresPage> {
                           ],
                         ),
                         Text(
-                          "$wins / $games victoire${wins > 1 ? 's' : ''}  ($ratio%)",
+                          "$wins / $games victoire${wins > 1 ? 's' : ''} ($ratio%)",
                           style: const TextStyle(
                             color: Colors.black87,
                             fontSize: 15,
