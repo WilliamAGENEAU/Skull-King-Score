@@ -4,6 +4,7 @@ import 'package:skull_king/ui/pages/round/steps/avatar_bonus.dart';
 class RoundTrickStep extends StatefulWidget {
   final List<String> players;
   final Map<String, int?> tricks;
+  final Map<String, int?> bets; // 👈 AJOUT : les mises
   final Map<String, int> bonuses;
   final VoidCallback onInputChanged;
   final int roundNumber;
@@ -12,6 +13,7 @@ class RoundTrickStep extends StatefulWidget {
     super.key,
     required this.players,
     required this.tricks,
+    required this.bets, // 👈 AJOUT
     required this.bonuses,
     required this.onInputChanged,
     required this.roundNumber,
@@ -22,7 +24,6 @@ class RoundTrickStep extends StatefulWidget {
 }
 
 class _RoundTrickStepState extends State<RoundTrickStep> {
-  /// 🔥 Valeur d’un bonus (quantité x ce nombre)
   final bonusValues = {
     "couleur": 10,
     "noir": 20,
@@ -32,7 +33,6 @@ class _RoundTrickStepState extends State<RoundTrickStep> {
     "butin": 20,
   };
 
-  /// 🔥 Nombre de fois max qu’on peut cliquer
   final maxBonusLevel = {
     "couleur": 3,
     "sirene": 2,
@@ -42,7 +42,6 @@ class _RoundTrickStepState extends State<RoundTrickStep> {
     "skull": 1,
   };
 
-  /// 🔥 Stocke combien de fois chaque bonus est activé
   late Map<String, Map<String, int>> bonusCount;
 
   @override
@@ -53,7 +52,6 @@ class _RoundTrickStepState extends State<RoundTrickStep> {
     };
   }
 
-  /// 🔁 GESTION DU NOMBRE DE CLICS + RECALCUL POINTS
   void toggleBonus(String player, String key) {
     setState(() {
       int current = bonusCount[player]![key]!;
@@ -70,7 +68,6 @@ class _RoundTrickStepState extends State<RoundTrickStep> {
     widget.onInputChanged();
   }
 
-  /// 🖼️ Image GRAY / COLOR selon niveau
   Widget bonusIcon(int count, String asset, double size) {
     final isActive = count > 0;
 
@@ -124,13 +121,39 @@ class _RoundTrickStepState extends State<RoundTrickStep> {
             final p = widget.players[i];
             final bonusValue = widget.bonuses[p] ?? 0;
 
+            /// 🟡 On récupère la MISE (et non les tricks)
+            final mise = widget.bets[p] ?? 0; // 👈 CORRECTION
+
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                PlisAvatar(name: p),
+                /// 🟡 Avatar + Badge de mise
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    PlisAvatar(name: p),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Text(
+                        "$mise", // 👈 MISE AFFICHÉE
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: 6),
 
-                /// 🎯 LIGNE PLIS + BONUS RESULTAT
+                /// 🎯 PLIS réels + BONUS
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -189,6 +212,7 @@ class _RoundTrickStepState extends State<RoundTrickStep> {
                   ],
                 ),
 
+                /// 🎴 Bonus row 1
                 Wrap(
                   spacing: 8,
                   children: [
@@ -201,6 +225,7 @@ class _RoundTrickStepState extends State<RoundTrickStep> {
                   ],
                 ),
 
+                /// 🎴 Bonus row 2
                 Wrap(
                   spacing: 8,
                   children: [
@@ -225,7 +250,6 @@ class _RoundTrickStepState extends State<RoundTrickStep> {
     );
   }
 
-  /// 🟡 BOUTON BONUS AVEC NIVEAU
   Widget bonusBtn(String p, String key, String asset, double size) {
     final level = bonusCount[p]![key]!;
 

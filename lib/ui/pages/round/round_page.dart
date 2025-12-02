@@ -139,9 +139,23 @@ class _RoundPageState extends State<RoundPage> {
                         physics: const NeverScrollableScrollPhysics(),
                         controlsBuilder: (_, _) => const SizedBox.shrink(),
 
-                        onStepTapped: (step) => setState(() {
-                          if (step <= currentStep) currentStep = step;
-                        }),
+                        onStepTapped: (step) {
+                          setState(() {
+                            // ⬅️ Autorisé : revenir en arrière
+                            if (step < currentStep) {
+                              currentStep = step;
+                              return;
+                            }
+
+                            // ⬅️ Autorisé : passer à PLIS si toutes les mises sont faites
+                            if (step == 1 && allBetsSelected) {
+                              currentStep = 1;
+                              return;
+                            }
+
+                            // ⛔ Pas autorisé d’aller plus loin sinon
+                          });
+                        },
 
                         steps: [
                           Step(
@@ -185,6 +199,7 @@ class _RoundPageState extends State<RoundPage> {
                               players: widget.players,
                               tricks: tricks,
                               bonuses: bonuses,
+                              bets: bets,
                               onInputChanged: () => setState(() {}),
                               roundNumber: widget.roundNumber,
                             ),
