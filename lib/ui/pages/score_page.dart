@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:skull_king/theme/app_theme.dart';
 import 'package:skull_king/ui/pages/home_page.dart';
 import 'package:skull_king/ui/pages/round/round_page.dart';
+import 'package:skull_king/ui/widgets/current_chart_game.dart';
 import 'package:skull_king/ui/widgets/score_table.dart';
 import 'package:skull_king/utils/save_winners.dart'; // ✅ pour sauvegarder les parties
 
@@ -27,6 +28,77 @@ class _ScorePageState extends State<ScorePage> {
     for (var player in widget.players) {
       totalScores[player] = 0;
     }
+  }
+
+  void _openGraphPopup() {
+    // Convertit allScores → format exploitable par le graphique
+    allScores.entries.map((e) {
+      return {
+        "round": e.key,
+        "scores": e.value.map(
+          (player, data) => MapEntry(player, data["score"] ?? 0),
+        ),
+      };
+    }).toList();
+
+    widget.players.map((p) {
+      return {"name": p, "score": totalScores[p] ?? 0};
+    }).toList();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        final List<Map<String, int>> convertedScores = [];
+
+        allScores.forEach((roundIndex, playerData) {
+          final scoreMap = <String, int>{};
+
+          playerData.forEach((player, info) {
+            scoreMap[player] =
+                info["total"] as int; // on prend la valeur finale de la manche
+          });
+
+          convertedScores.add(scoreMap);
+        });
+
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(16),
+          child: Stack(
+            children: [
+              // Papier en fond
+              Container(
+                decoration: BoxDecoration(
+                  image: const DecorationImage(
+                    image: AssetImage("assets/images/papier.jpg"),
+                    fit: BoxFit.cover,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: SingleChildScrollView(
+                  child: CurrentGameChart(
+                    allScores: allScores, // Map<int, Map<String, dynamic>>
+                    players: widget.players,
+                    currentRound: currentRound,
+                  ),
+                ),
+              ),
+
+              // Bouton fermer
+              Positioned(
+                right: 8,
+                top: 8,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.black, size: 28),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _confirmReturnToMenu(BuildContext context) {
@@ -127,6 +199,24 @@ class _ScorePageState extends State<ScorePage> {
                 child: IconButton(
                   onPressed: () => _confirmReturnToMenu(context),
                   icon: const Icon(Icons.menu, color: Colors.black, size: 34),
+                ),
+              ),
+            ),
+          ),
+
+          /// --- Bouton Graphique ---
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.show_chart,
+                    color: Colors.black,
+                    size: 34,
+                  ),
+                  onPressed: _openGraphPopup,
                 ),
               ),
             ),
