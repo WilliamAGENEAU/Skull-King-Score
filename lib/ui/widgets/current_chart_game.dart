@@ -32,11 +32,24 @@ class CurrentGameChart extends StatelessWidget {
       );
     }
 
-    // Colors generator stable by name
     Color colorForPlayer(String name) {
-      final hash = name.codeUnits.fold(0, (a, b) => a + b);
-      final hue = (hash * 37) % 360;
-      return HSLColor.fromAHSL(1.0, hue.toDouble(), 0.45, 0.65).toColor();
+      final hash = name.codeUnits.fold(0, (a, b) => a + b * 31);
+
+      // 🎨 Hue bien réparti
+      final double hue = (hash * 53) % 360;
+
+      // 🔥 Saturation forte et variable
+      final double saturation = 0.65 + ((hash % 30) / 100); // 0.65 → 0.95
+
+      // 🌑 Luminosité plus sombre, bien contrastée
+      final double lightness = 0.35 + ((hash % 20) / 100); // 0.35 → 0.55
+
+      return HSLColor.fromAHSL(
+        1.0,
+        hue,
+        saturation.clamp(0.6, 1.0),
+        lightness.clamp(0.3, 0.6),
+      ).toColor();
     }
 
     // --- Build ordered list of rounds we will display ---

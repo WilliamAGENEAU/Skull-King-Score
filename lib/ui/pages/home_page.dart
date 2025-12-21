@@ -1,7 +1,9 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:skull_king/theme/app_theme.dart';
+import 'package:skull_king/ui/pages/adult_page.dart/adult_party.dart';
 import 'package:skull_king/ui/pages/palmares_page.dart';
 import 'package:skull_king/ui/widgets/skull_button.dart';
 import 'package:skull_king/ui/pages/player_selection_page.dart';
@@ -19,6 +21,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late Animation<double> _bgScaleAnimation;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
+  bool showAdultMode = false;
+
+  int _versionTapCount = 0;
+  Timer? _tapResetTimer;
 
   @override
   void initState() {
@@ -58,7 +65,33 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void dispose() {
     _bgController.dispose();
     _fadeController.dispose();
+    _tapResetTimer?.cancel();
     super.dispose();
+  }
+
+  void _onVersionTapped() {
+    _tapResetTimer?.cancel();
+
+    _versionTapCount++;
+
+    // ⏱️ reset si trop lent
+    _tapResetTimer = Timer(const Duration(seconds: 2), () {
+      _versionTapCount = 0;
+    });
+
+    if (_versionTapCount >= 5 && !showAdultMode) {
+      setState(() {
+        showAdultMode = true;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Mode +18 activé 🌶️"),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -81,6 +114,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           ),
           Container(color: Colors.black.withOpacity(0.6)),
+
+          /// --- MENU ---
           Center(
             child: FadeTransition(
               opacity: _fadeAnimation,
@@ -128,22 +163,51 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       label: 'Extensions (Bientôt)',
                       onPressed: () {},
                     ),
+
+                    if (showAdultMode) ...[
+                      const SizedBox(height: 30),
+                      SkullButton(
+                        label: 'Version +18 🌶️',
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              transitionDuration: const Duration(
+                                milliseconds: 700,
+                              ),
+                              pageBuilder: (_, _, _) => const AdultPage(),
+                              transitionsBuilder: (_, anim, _, child) =>
+                                  FadeTransition(opacity: anim, child: child),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
           ),
+
+          /// --- VERSION (ZONE SECRÈTE 😏) ---
           Positioned(
             bottom: 10,
             left: 10,
             child: FadeTransition(
               opacity: _fadeAnimation,
-              child: const Text(
-                'v1.2 • William Ageneau',
-                style: TextStyle(
-                  color: AppTheme.textWhite,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w300,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: _onVersionTapped,
+                child: const Padding(
+                  padding: EdgeInsets.all(6.0),
+                  child: Text(
+                    'v1.3 • William Ageneau',
+                    style: TextStyle(
+                      color: AppTheme.textWhite,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w300,
+                    ),
+                  ),
                 ),
               ),
             ),
