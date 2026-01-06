@@ -209,7 +209,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 child: const Padding(
                   padding: EdgeInsets.all(6.0),
                   child: Text(
-                    'v1.3 • William Ageneau',
+                    'v1.4 • William Ageneau',
                     style: TextStyle(
                       color: AppTheme.textWhite,
                       fontSize: 12,
