@@ -1,8 +1,8 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:skull_king/ui/pages/home_page.dart';
-import 'dart:math';
 
 class AdultPage extends StatefulWidget {
   const AdultPage({super.key});
@@ -12,7 +12,7 @@ class AdultPage extends StatefulWidget {
 }
 
 class _AdultPageState extends State<AdultPage> {
-  /// On stocke l'état des cartes (recto/verso)
+  /// État recto / verso
   final List<bool> _isFlipped = List.generate(10, (_) => false);
 
   void _confirmReturnToMenu(BuildContext context) {
@@ -64,7 +64,7 @@ class _AdultPageState extends State<AdultPage> {
     return Scaffold(
       body: Stack(
         children: [
-          /// --- Image de fond ---
+          /// --- Fond ---
           Positioned.fill(
             child: Image.asset('assets/images/love.png', fit: BoxFit.cover),
           ),
@@ -75,7 +75,7 @@ class _AdultPageState extends State<AdultPage> {
             child: Align(
               alignment: Alignment.topLeft,
               child: Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.all(12),
                 child: IconButton(
                   onPressed: () => _confirmReturnToMenu(context),
                   icon: const Icon(Icons.menu, color: Colors.black, size: 34),
@@ -84,22 +84,19 @@ class _AdultPageState extends State<AdultPage> {
             ),
           ),
 
-          /// --- GRILLE 2x5 AVEC FLIP CARDS ---
+          /// --- Grille 2x5 ---
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 60),
+            padding: const EdgeInsets.fromLTRB(14, 70, 14, 20),
             child: GridView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
+              physics: const NeverScrollableScrollPhysics(),
               itemCount: 10,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // 🔥 2 colonnes
-                crossAxisSpacing: 16, // espace horizontal
-                mainAxisSpacing: 16, // espace vertical
-                childAspectRatio: 1.40, // ajustement ratio visuel
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.40,
               ),
-              itemBuilder: (context, index) {
-                return _buildFlipCard(index);
-              },
+              itemBuilder: (_, index) => _buildFlipCard(index),
             ),
           ),
         ],
@@ -107,17 +104,17 @@ class _AdultPageState extends State<AdultPage> {
     );
   }
 
-  /// --- WIDGET FLIP CARD ---
+  /// --- Flip card ---
   Widget _buildFlipCard(int index) {
     return GestureDetector(
       onTap: () {
         setState(() => _isFlipped[index] = !_isFlipped[index]);
       },
-      child: TweenAnimationBuilder(
-        tween: Tween<double>(begin: 0, end: _isFlipped[index] ? 1 : 0),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: _isFlipped[index] ? 1 : 0),
         duration: const Duration(milliseconds: 400),
-        builder: (context, value, child) {
-          final isBack = value > 0.5;
+        builder: (_, value, _) {
+          final bool isBack = value > 0.5;
 
           return Transform(
             alignment: Alignment.center,
@@ -130,15 +127,15 @@ class _AdultPageState extends State<AdultPage> {
                     : const Color.fromARGB(255, 243, 94, 177),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.pink.withOpacity(0.5),
+                    color: Colors.pink.withOpacity(0.45),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: isBack
-                  ? _buildBackCardContent(index)
-                  : _buildFrontCardContent(index),
+                  ? _buildBackCardImage(index)
+                  : _buildFrontCardImage(index),
             ),
           );
         },
@@ -146,61 +143,55 @@ class _AdultPageState extends State<AdultPage> {
     );
   }
 
-  /// --- RECTO: IMAGE pour chaque card ---
-  Widget _buildFrontCardContent(int index) {
-    // Liste des images associées à chaque carte
+  /// --- RECTO : images ---
+  Widget _buildFrontCardImage(int index) {
     final List<String> images = [
-      "assets/images/fuite.png", // Card 1
-      "assets/images/couleur.png", // Card 2
-      "assets/images/atout.png", // Card 3
-      "assets/images/sirenes.png", // Card 4
-      "assets/images/pirates.png", // Card 5
-      "assets/images/master.png", // Card 6
-      "assets/images/couleur.png", // Card 7
-      "assets/images/buttin.png", // Card 8
-      "assets/images/baleine.png", // Card 9
-      "assets/images/kraken.png", // Card 10
+      "assets/images/fuite.png",
+      "assets/images/couleur.png",
+      "assets/images/atout.png",
+      "assets/images/sirenes.png",
+      "assets/images/pirates.png",
+      "assets/images/master.png",
+      "assets/images/couleur.png",
+      "assets/images/buttin.png",
+      "assets/images/baleine.png",
+      "assets/images/kraken.png",
     ];
 
     return Center(
       child: Image.asset(
         images[index],
-        width: 70, // 🔥 ajuste la taille ici si besoin
-        height: 70,
+        width: 72,
+        height: 72,
         fit: BoxFit.contain,
       ),
     );
   }
 
-  /// --- VERSO: TEXTE D’INFO (modifiable) ---
-  /// --- VERSO: TEXTE D’INFO (spécifique à chaque carte) ---
-  Widget _buildBackCardContent(int index) {
-    // 🔥 Liste des textes pour chaque carte
-    final List<String> backTexts = [
-      "", // 1
-      "", // 2
-      "", // 3
-      "", // 4
-      "", // 5
-      "", // 6
-      "", // 7
-      "", // 8
-      "", // 9
-      "", // 10
+  /// --- VERSO : images PNG ---
+  Widget _buildBackCardImage(int index) {
+    final List<String> backImages = [
+      "assets/images/back_1.png",
+      "assets/images/back_2.png",
+      "assets/images/back_3.png",
+      "assets/images/back_4.png",
+      "assets/images/back_5.png",
+      "assets/images/back_6.png",
+      "assets/images/back_7.png",
+      "assets/images/back_8.png",
+      "assets/images/back_9.png",
+      "assets/images/back_10.png",
     ];
 
     return Transform(
       alignment: Alignment.center,
-      transform: Matrix4.rotationY(pi), // évite l'effet miroir
+      transform: Matrix4.rotationY(pi), // corrige miroir
       child: Center(
-        child: Text(
-          backTexts[index],
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Color.fromARGB(255, 91, 12, 82),
-          ),
+        child: Image.asset(
+          backImages[index],
+          width: 120,
+          height: 120,
+          fit: BoxFit.contain,
         ),
       ),
     );
